@@ -1,6 +1,5 @@
 extends EditorInspectorPlugin
 
-const TDPropEditor = preload("TextureDictPropEditor.gd")
 const AAPropEditor = preload("AAPropEditor.gd")
 const AASpriteFrameEditor = preload("AASpriteFrameEditor.gd")
 
