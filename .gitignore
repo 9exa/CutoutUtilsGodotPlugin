@@ -1,0 +1,10 @@
+/.import
+/default_env.tres
+/default_bus_layout.tres
+export_presets.cfg
+/icon.png
+project.godot
+
+# Only add CutoutUtils plugin 
+/addons/*
+!/addons/CutoutUtils

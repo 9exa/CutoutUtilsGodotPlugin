@@ -1,0 +1,15 @@
+[gd_scene format=2]
+
+[node name="AAFilePopup" type="FileDialog"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -228.864
+margin_top = -132.9
+margin_right = 228.864
+margin_bottom = 132.9
+window_title = "Open a File"
+dialog_text = "You'll have to select and deselect"
+mode = 0
+filters = PoolStringArray( "*.xml;Yep XMLs" )
