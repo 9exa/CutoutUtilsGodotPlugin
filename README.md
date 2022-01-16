@@ -23,3 +23,8 @@ Such XML files expect to be in the following form
 </data>
 ```
 When you create an AtlasArray Resource you'll see a *Load XML* button.
+
+
+###TODO
+Support for multiple source files in AtlasArray
+Support for size declaration in AtlasArray
