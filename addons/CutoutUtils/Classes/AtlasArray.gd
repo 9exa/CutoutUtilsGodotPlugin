@@ -6,7 +6,7 @@ const XMLReader = preload("res://addons/CutoutUtils/Importer/TextureDictionaryXM
 
 export (Array, Texture) var atlases = [] setget setAtlases
 
-func setAtlases(values):
+func setAtlases(values, setOthers = true):
 	if values != atlases:
 		atlases = values
 		#sets the default texture if appended through editor
@@ -15,8 +15,11 @@ func setAtlases(values):
 			values[-1] = StreamTexture.new()
 		
 		#resize names and pivots appropriately
-		setNames(names)
-		setPivots(pivots)
+		if setOthers:
+			setNames(names)
+			setPivots(pivots)
+			setSizes(sizes)
+		emit_changed()
 
 #give a name to each texture, may not be unique
 
@@ -89,7 +92,7 @@ export (PoolVector2Array) var pivots := PoolVector2Array() setget setPivots
 
 func setPivots(values):
 	#if new array is shorter than the number of textures
-	#fill with pivots at the top left
+	#fill with pivots to the center
 	if values.size() < len(atlases):
 		for i in range(values.size(), len(atlases)):
 			values.append(atlases[i].get_size() * 0.5)
@@ -102,12 +105,25 @@ func setPivots(values):
 
 export (PoolVector2Array) var sizes := PoolVector2Array()
 
+func setSizes(values):
+	#if new array is shorter than the number of textures
+	#fill with pivots to the centersize of imported rectangle
+	#if new array is shorter than the number of textures
+	#fill with pivots to the center
+	if values.size() < len(atlases):
+		for i in range(values.size(), len(atlases)):
+			values.append(atlases[i].get_size())
+	else:
+		values.resize(len(atlases))
+	#tell potential listeners (the editor) that something's changed
+	if values != sizes:
+		sizes = values
+		emit_changed()
 #IMPORTANT. Using the Godot Editors native interface, you can swap items in each
 #of the arrays around but currently items from the other arrays do not swap to 
 #match that transaction.
 #ie if you swap two textures in the 'atlases' area, then you're just swapping 
 #their corresponding 'names' and 'pivots'
-
 
 
 func get_class(): return "AtlasArray"
@@ -122,11 +138,48 @@ func getTexture(ind):
 #get the texture with that name, if it exists
 func getNamedTexture(name):
 	return
+
+#keep handy in case the size of the source texture for atlases gets reimported
+var sourceCurrentSize
+
+#called when the source texture loaded by an xml
+func _onSourceAttChanged(source):
+	#do nothing is no source size set before
+	if sourceCurrentSize == null:
+		return
+	var scale = source.get_size() / sourceCurrentSize
+	if scale == Vector2.ONE: 
+		return
+	for i in range(len(atlases)):
+		if atlases[i] is AtlasTexture:
+			var text = atlases[i]
+			if text.atlas == source:
+				text.region.position *= scale
+				text.region.size *= scale
+				pivots[i] *= scale
+	sourceCurrentSize = source.get_size()
+	emit_changed()
+#disconnect signals with current
+#sources
+func disconnectSources():
+	var source
+	var signal_name
+	var method_name
+	for connDict in get_incoming_connections():
+		source = connDict.source
+		signal_name = connDict.signal_name
+		method_name = connDict.method_name
+		if method_name == "_onSourceAttChanged":
+			source.disconnect(signal_name, self, method_name)
+	
 #loaders. Note that because we use the native godot editor, values won't change
 #until you deselect and reselect the arrays
 
 #loads in and sets to be data from an XMLfile
 func fromXML(filePath):
+	#no need to track previous sources
+	disconnectSources()
+	
 	var reader = XMLReader.new()
 	var E = reader.open(filePath)
 	if E == OK:
@@ -139,29 +192,55 @@ func fromXML(filePath):
 		var nameList = PoolStringArray()
 		var newArray = []
 		var pivotArray = PoolVector2Array()
+		var sizesArray = PoolVector2Array()
 		var newTexture
+		#what to adjust the region and pivot rects by, incase the texture
+		#was imported toa a different size than the raw image
+		var importScale = sourceTexture.get_size() / reader.rawSize
 		#go line-by-line
 		var rect; var piv
 		for name in reader.textures.keys():
+			#add the atlas
 			newTexture = AtlasTexture.new()
 			newTexture.atlas = sourceTexture
 			newTexture.region = Rect2(
-				reader.textures[name]["rect"].x,
-				reader.textures[name]["rect"].y,
+				importScale *Vector2(
+					reader.textures[name]["rect"].x ,
+					reader.textures[name]["rect"].y
+				),
+				importScale * Vector2(
 				reader.textures[name]["rect"].w,
 				reader.textures[name]["rect"].h
-			)
+				)
+			) 
+			newArray.append(newTexture)
+			#add the pivot
 			pivotArray.append(Vector2(
 				reader.textures[name]["pivot"].x,
 				reader.textures[name]["pivot"].y
-			))
-			newArray.append(newTexture)
+			) * importScale)
+			#add the size
+			#if none was specified in the xml, default to the (scaled)
+			#size of the region
+			if not "size" in reader.textures[name]:
+				sizesArray.append(newTexture.get_size())
+			else:
+				sizesArray.append(Vector2(
+					reader.textures[name]["size"].x,
+					reader.textures[name]["size"].y
+				))
+			#add the name
 			nameList.append(name)
-			
 		
+		#ready to update if the size of sourceTexture changes (by reimporting)
+		sourceCurrentSize = sourceTexture.get_size()
+		sourceTexture.connect("changed", self, "_onSourceAttChanged", [sourceTexture])
+		
+		# set things
 		atlases = newArray
 		setNames(nameList)
 		setPivots(pivotArray)
+		setSizes(sizesArray)
 		emit_changed()
 	return E
 

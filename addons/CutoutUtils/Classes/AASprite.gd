@@ -18,7 +18,7 @@ func setTextures(val):
 	if val != textures:
 		#when stuff in the resource changes, AASprite will want to tell the editor
 		if val != null:
-			val.connect("changed", self, "emit_signal", ["editorChanged"])
+			val.connect("changed", self, "_onTexturesChanged")
 		#disconnect from the old resource
 		if (textures != null and 
 				textures.is_connected("changed", self, "emit_signal")):
@@ -112,6 +112,17 @@ func setPreviewIcons(value):
 		emit_signal("editorChanged")
 
 
+var nchanged = 0
+#something in textures changed!
+func _onTexturesChanged():
+	#redraw the image
+	displayTexture(frameInd)
+	
+	nchanged += 1
+	
+	#tell the editor
+	emit_signal("editorChanged")
+
 func _ready():
 	pass
 
@@ -121,7 +132,6 @@ func _notification(what):
 		NOTIFICATION_DRAW:
 			if textures != null and atlasEquipped:
 				displayTexture(frameInd)
-			print("NOT_DRAW")
 
 func _to_string():
 	return "AtlasArraySprite"

@@ -1,7 +1,8 @@
 extends XMLParser
 #unfortunately Godot doesn't have a high level xml tree parser, like python does
 
-
+#raw size of image document the source is from
+var rawSize := Vector2(100, 100)
 var source = [] # maybe later I'll add support for multiple sources
 var textures
 var parts
@@ -17,6 +18,8 @@ func mainRead():
 		match get_node_type():
 			NODE_ELEMENT:
 				match get_node_name():
+					"data":
+						readHeader()
 					"source":
 						source =readSource()
 					"textures":
@@ -45,6 +48,11 @@ func atts2Dict(tryInt = false) -> Dictionary:
 
 	return d
 
+#read the <data> attributes at the top
+func readHeader():
+	rawSize.x = int(get_named_attribute_value("width"))
+	rawSize.y = int(get_named_attribute_value("height"))
+
 #reads the fileloc of a source element
 func readSource():
 	return get_named_attribute_value("path")
@@ -60,12 +68,12 @@ func createTextureDict():
 		return out
 	while (read() == OK):
 		if get_node_type() == NODE_ELEMENT:
-			match get_node_name():
+			match get_node_name().to_lower():
 				"texture":
 					currentName = get_named_attribute_value("name")
 					#initialise a new dictionary and the entry "foreign"
 					currentD["foreign"] = []
-				"rect", "pivot":
+				"rect", "pivot", "size":
 					currentD[get_node_name()] = atts2Dict(true)
 				"foreign":
 					currentD["foreign"].append(atts2Dict(true))
