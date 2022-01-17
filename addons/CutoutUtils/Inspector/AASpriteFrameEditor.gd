@@ -1,7 +1,7 @@
 extends EditorProperty
 
 
-#replaces the ticker for frames with an OptionButton with each of the textures names
+#replaces the field for frames with an OptionButton with each of the textures names
 
 #everything's horizontal size flage should be set to this so it can stretch out
 #with the inspectio
@@ -31,6 +31,7 @@ func refactorList():
 		#go through the AAsprites textures resource and add names to the list 
 		#one-by-one
 		for i in range(o.textures.getSize()):
+			
 			var textureName = o.textures.names[i]
 			if useIcons:
 				var actualTexture = o.textures.getTexture(i)
@@ -40,10 +41,10 @@ func refactorList():
 		#if there were no items add a placeholder
 		if o.textures.getSize() == 0:
 			list.add_item("Nothing")
-		
+		list.get_item_count()
 		if useIcons:
 			list.expand_icon = true
-		list.select(o.frame) 
+		list.select(o.frameInd) 
 	else:
 		#if there were no items add a placeholder
 		list.add_item("Nothing")
@@ -76,15 +77,16 @@ func _ready():
 	pass # Replace with function body.
 
 func update_property():
-	if objectHasTextures():
-		var o = get_edited_object()
-		list.set_visible(true)
-		list.select(get_edited_object().frame)
-	else:
-		list.set_visible(false)
+	pass
+#	if objectHasTextures():
+#		var o = get_edited_object()
+#		list.set_visible(true)
+#		list.select(get_edited_object().frameInd)
+#	else:
+#		list.set_visible(false)
 
 func _onNewSelect(ind):
-	emit_changed("frame", ind)
+	emit_changed("frameInd", ind, "", true)
 	
 func _onObjectEditorChanged():
 	refactorList()

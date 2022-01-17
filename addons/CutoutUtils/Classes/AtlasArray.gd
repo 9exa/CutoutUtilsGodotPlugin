@@ -21,7 +21,10 @@ func setAtlases(values):
 #give a name to each texture, may not be unique
 
 
-export (PoolStringArray) var names = PoolStringArray() setget setNames
+export (PoolStringArray) var names := PoolStringArray() setget setNames
+
+#maps each name to it's corresponding index in the array
+var nameIndexes := {}
 
 func setNames(values):
 	#if new array is shorter than the number of textures
@@ -32,12 +35,57 @@ func setNames(values):
 	else:
 		values.resize(len(atlases))
 	
-	#tell potential listeners (the editor) that something's changed
+	
 	if values != names:
-		names = values
+		#going entry by entry, resolve duplicates by numbering them at the end
+		#tell potential listeners (the editor) that something's changed
+		var base; var n
+		for i in range(values.size()):
+			if i >= names.size():
+				names.append("")
+			if values[i] != names[i]:
+				if values[i] in names:
+					base = leftOfTrailingNumber(values[i])
+					n = trailingNumber(values[i])
+					while (base + str(n)) in names:
+						n += 1
+					values[i] = base + str(n)
+				names.set(i, values[i])
+		#change other things
+		indexTheNames()
 		emit_changed()
 
-export (PoolVector2Array) var pivots = PoolVector2Array() setget setPivots
+#filles up nameIndexes with the mapping of each name in names to their index
+func indexTheNames():
+	nameIndexes.clear()
+	for i in range(names.size()):
+		nameIndexes[names[i]] = i
+
+#get the number (as an int) at the end of a string
+#empty string is treated as 1
+static func trailingNumber(s : String) -> int:
+	if s.length() == 0 or not s[-1].is_valid_integer():
+		return 1
+	var i := 1
+	while i <= s.length():
+		if not s.right(s.length()-i).is_valid_float():
+			return int(s.right(s.length()- i + 1))
+		i += 1
+	return int(s)
+#gets the parts of a string left of its trailing number, if any
+static func leftOfTrailingNumber(s: String) -> String:
+	if s.length() == 0 or not s[-1].is_valid_integer():
+		return s
+	var i := 1
+	while i <= s.length():
+		if not s.right(s.length()-i).is_valid_float():
+			return (s.left(s.length()- i +1))
+		i += 1
+	#whole thing is a number
+	return ""
+
+
+export (PoolVector2Array) var pivots := PoolVector2Array() setget setPivots
 
 func setPivots(values):
 	#if new array is shorter than the number of textures
@@ -52,6 +100,8 @@ func setPivots(values):
 		pivots = values
 		emit_changed()
 
+export (PoolVector2Array) var sizes := PoolVector2Array()
+
 #IMPORTANT. Using the Godot Editors native interface, you can swap items in each
 #of the arrays around but currently items from the other arrays do not swap to 
 #match that transaction.
@@ -59,15 +109,19 @@ func setPivots(values):
 #their corresponding 'names' and 'pivots'
 
 
+
 func get_class(): return "AtlasArray"
 
 func getSize():
 	return len(atlases)
+
 #get the texture at that index
 func getTexture(ind):
 	if ind >= 0 and ind < len(atlases):
 		return atlases[ind]
-
+#get the texture with that name, if it exists
+func getNamedTexture(name):
+	return
 #loaders. Note that because we use the native godot editor, values won't change
 #until you deselect and reselect the arrays
 
