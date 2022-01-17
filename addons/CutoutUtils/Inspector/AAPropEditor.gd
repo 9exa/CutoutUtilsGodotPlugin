@@ -7,8 +7,14 @@ const EDITORSIZEFLAG = Control.SIZE_EXPAND_FILL | Control.SIZE_SHRINK_CENTER
 
 #const FileOpener = preload("AAFilePopup.tscn")
 class FileOpener extends EditorFileDialog:
-	func _init():
-		add_filter("*.xml; From Xtensible Markup")
+	func _init(type):
+		match type:
+			#is for opening the xml template information
+			"template":
+				add_filter("*.xml; From Xtensible Markup")
+			#is for selecting the source texture
+			"image":
+				add_filter("*.png, *jpeg; Images")
 		mode = MODE_OPEN_FILE
 		dialog_text = "You'll have to select and reselect the property arrays"
 		set_anchor_and_margin(MARGIN_LEFT, 0.5, -300)
@@ -17,11 +23,14 @@ class FileOpener extends EditorFileDialog:
 		set_anchor_and_margin(MARGIN_BOTTOM, 0.5, 150)
 #		rect_min_size = Vector2(800,600)
 #		set_anchors_and_margins_preset(Control.PRESET_CENTER)
-		
-		
 
-#the popup that selects XML and other files for to open
-var fileOpener := FileOpener.new()
+
+#the popups that selects XML and image files for to open
+var templateFileOpener := FileOpener.new("template")
+var imageFileOpener := FileOpener.new("image")
+#store the path to the template,
+var templateFilePath := ""
+
 
 var fromXMLButton = makeXMLButton()
 func makeXMLButton():
@@ -45,15 +54,24 @@ func _ready():
 	set_bottom_editor(fromXMLButton)
 	
 	#add and connect the file popup
-	add_child(fileOpener)
-	fileOpener.connect("file_selected", self, "_onFileSelected")
+	add_child(templateFileOpener)
+	add_child(imageFileOpener)
+	templateFileOpener.connect("file_selected", self, "_onFileSelected", [1])
+	imageFileOpener.connect("file_selected", self, "_onFileSelected", [2])
 	
 	pass # Replace with function body.
 
 #bring up the file popup
 func _onXMLPressed():
-	fileOpener.popup()
+	templateFileOpener.popup()
 
 #load the file selected from filepopup
-func _onFileSelected(path):
-	get_edited_object().fromXML(path)
+func _onFileSelected(path, stage):
+	match stage:
+		1:
+			#store path to template file
+			templateFilePath = path
+			#get user to pick image file
+			imageFileOpener.popup()
+		2:
+			get_edited_object().fromXML(templateFilePath, path)

@@ -40,6 +40,9 @@ func setNames(values):
 	
 	
 	if values != names:
+		#start by shortening the names array
+		names.resize(values.size())
+		
 		#going entry by entry, resolve duplicates by numbering them at the end
 		#tell potential listeners (the editor) that something's changed
 		var base; var n
@@ -176,17 +179,17 @@ func disconnectSources():
 #until you deselect and reselect the arrays
 
 #loads in and sets to be data from an XMLfile
-func fromXML(filePath):
+func fromXML(templatePath, sourcePath):
 	#no need to track previous sources
 	disconnectSources()
 	
 	var reader = XMLReader.new()
-	var E = reader.open(filePath)
+	var E = reader.open(templatePath)
 	if E == OK:
 		reader.mainRead()
 		
 		#abort if the source could not be loaded
-		var sourceTexture = load(reader.source)
+		var sourceTexture = load(sourcePath)
 		if sourceTexture == null: return E
 		
 		var nameList = PoolStringArray()

@@ -3,7 +3,6 @@ extends XMLParser
 
 #raw size of image document the source is from
 var rawSize := Vector2(100, 100)
-var source = [] # maybe later I'll add support for multiple sources
 var textures
 var parts
 
@@ -20,8 +19,6 @@ func mainRead():
 				match get_node_name():
 					"data":
 						readHeader()
-					"source":
-						source =readSource()
 					"textures":
 						textures = createTextureDict()
 					"parts":
@@ -53,9 +50,6 @@ func readHeader():
 	rawSize.x = int(get_named_attribute_value("width"))
 	rawSize.y = int(get_named_attribute_value("height"))
 
-#reads the fileloc of a source element
-func readSource():
-	return get_named_attribute_value("path")
 	
 # found the "<textures>" node
 func createTextureDict():
